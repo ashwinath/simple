@@ -2,6 +2,7 @@ package framework
 
 import (
 	"context"
+	"log"
 	"testing"
 
 	"go.uber.org/zap"
@@ -23,7 +24,11 @@ func newTestModule() Module {
 
 func TestFrameworkApp(t *testing.T) {
 	logger, _ := zap.NewProduction()
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			log.Printf("error closing logger: %v", err)
+		}
+	}()
 	sugar := logger.Sugar()
 
 	a := NewApp(sugar, newTestModule())

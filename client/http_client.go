@@ -38,7 +38,7 @@ func HTTPGet(ctx context.Context, url string, headers map[string]string, data an
 	return json.Unmarshal(body, data)
 }
 
-func HTTPPost(ctx context.Context, url string, headers map[string]string, payload, data interface{}) error {
+func HTTPPost(ctx context.Context, url string, headers map[string]string, payload, data any) error {
 	p, err := json.Marshal(payload)
 	if err != nil {
 		return fmt.Errorf("failed to marshal payload: %s", err)

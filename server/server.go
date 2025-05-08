@@ -15,23 +15,45 @@ type Server struct {
 	fw           framework.FW
 	router       *mux.Router
 	port         int
-	readTimeout  int
-	writeTimeout int
+	readTimeout  time.Duration
+	writeTimeout time.Duration
 }
 
-func NewServer(fw framework.FW, port, readTimeout, writeTimeout int) *Server {
+func NewServer(fw framework.FW, options ...func(*Server)) *Server {
 	s := &Server{
 		fw:           fw,
 		router:       mux.NewRouter(),
-		port:         port,
-		readTimeout:  readTimeout,
-		writeTimeout: writeTimeout,
+		port:         6000,
+		readTimeout:  5 * time.Second,
+		writeTimeout: 5 * time.Second,
+	}
+
+	for _, o := range options {
+		o(s)
 	}
 
 	s.RegisterRoute("/ping", http.MethodGet, Ping)
 	s.RegisterHandler("/debug/pprof", http.DefaultServeMux)
 
 	return s
+}
+
+func WithPort(port int) func(*Server) {
+	return func(s *Server) {
+		s.port = port
+	}
+}
+
+func WithReadTimeout(timeout time.Duration) func(*Server) {
+	return func(s *Server) {
+		s.readTimeout = timeout
+	}
+}
+
+func WithWriteTimeout(timeout time.Duration) func(*Server) {
+	return func(s *Server) {
+		s.writeTimeout = timeout
+	}
 }
 
 func (m *Server) RegisterRoute(path, method string, handler CustomHTTPHandler) *Server {
@@ -48,8 +70,8 @@ func (m *Server) Serve() {
 	srv := &http.Server{
 		Handler:      m.router,
 		Addr:         fmt.Sprintf("0.0.0.0:%d", m.port),
-		WriteTimeout: time.Duration(m.writeTimeout) * time.Second,
-		ReadTimeout:  time.Duration(m.readTimeout) * time.Second,
+		WriteTimeout: m.writeTimeout,
+		ReadTimeout:  m.readTimeout,
 	}
 
 	m.fw.GetLogger().Infof("running server on port: %d", m.port)
